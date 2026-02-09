@@ -8,18 +8,61 @@ import utilRoutes from "./routes/utils.js";
 import dispatchRoutes from "./routes/dispatch.js";
 import masterRoutes from "./routes/master.js";
 import dispatchResultsRoutes from "./routes/dispatch-results.js";
+import cottonRoutes from "./routes/cotton.js";
 
 dotenv.config();
 
 const app = express();
 
-app.use(cors());
+app.use(cors({
+  origin: process.env.ALLOWED_ORIGIN || "*"
+}));
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
+
+// Anti-caching middleware
+app.use((req, res, next) => {
+  res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+  res.set('Pragma', 'no-cache');
+  res.set('Expires', '0');
+  res.set('Surge-Control', 'no-store');
+  next();
+});
 
 // Health check route
 app.get("/health", (req, res) => {
   res.json({ status: "Backend is running" });
+});
+
+// Restart service route
+app.post("/api/restart-service", async (req, res) => {
+  const serviceId = process.env.RENDER_SERVICE_ID;
+  const apiKey = process.env.RENDER_API_KEY;
+
+  if (!serviceId || !apiKey) {
+    return res.status(500).json({ success: false, error: "Render credentials not configured" });
+  }
+
+  try {
+    const response = await fetch(`https://api.render.com/v1/services/${serviceId}/deploys`, {
+      method: 'POST',
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`
+      }
+    });
+
+    if (response.ok) {
+      const data = await response.json();
+      res.json({ success: true, message: "Restart triggered successfully", data });
+    } else {
+      const errorData = await response.json();
+      res.status(response.status).json({ success: false, error: errorData.message || "Failed to trigger restart" });
+    }
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
 });
 
 // Supabase connectivity test
@@ -44,6 +87,7 @@ apiRouter.use(utilRoutes);
 apiRouter.use(dispatchRoutes);
 apiRouter.use(masterRoutes);
 apiRouter.use(dispatchResultsRoutes);
+apiRouter.use(cottonRoutes);
 
 app.use("/api", apiRouter);
 
