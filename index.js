@@ -54,11 +54,17 @@ app.post("/api/restart-service", async (req, res) => {
     });
 
     if (response.ok) {
-      const data = await response.json();
+      const data = await response.json().catch(() => ({}));
       res.json({ success: true, message: "Restart triggered successfully", data });
     } else {
-      const errorData = await response.json();
-      res.status(response.status).json({ success: false, error: errorData.message || "Failed to trigger restart" });
+      let errorMessage = "Failed to trigger restart";
+      try {
+        const errorData = await response.json();
+        errorMessage = errorData.message || errorMessage;
+      } catch (e) {
+        errorMessage = await response.text() || errorMessage;
+      }
+      res.status(response.status).json({ success: false, error: errorMessage });
     }
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
