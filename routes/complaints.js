@@ -102,11 +102,29 @@ router.get("/fabric-complaints", async (req, res) => {
 router.delete("/yarn-complaints/:id", async (req, res) => {
   try {
     const { id } = req.params;
+    const { deleted_by } = req.query;
     const { error } = await supabase
       .from("yarn_complaints")
       .delete()
       .eq("id", id);
     if (error) throw error;
+
+    if (deleted_by) {
+      const { data: userData } = await supabase
+        .from("login_details")
+        .select("work_details")
+        .eq("full_name", deleted_by)
+        .single();
+      
+      const newWorkDetails = (userData?.work_details ? userData.work_details + "\n" : "") + 
+        `Deleted yarn complaint ID ${id} at ${new Date().toLocaleString()}`;
+      
+      await supabase
+        .from("login_details")
+        .update({ work_details: newWorkDetails })
+        .eq("full_name", deleted_by);
+    }
+
     res.json({ success: true, message: "Complaint deleted" });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
@@ -117,11 +135,29 @@ router.delete("/yarn-complaints/:id", async (req, res) => {
 router.delete("/fabric-complaints/:id", async (req, res) => {
   try {
     const { id } = req.params;
+    const { deleted_by } = req.query;
     const { error } = await supabase
       .from("fabric_complaints")
       .delete()
       .eq("id", id);
     if (error) throw error;
+
+    if (deleted_by) {
+      const { data: userData } = await supabase
+        .from("login_details")
+        .select("work_details")
+        .eq("full_name", deleted_by)
+        .single();
+      
+      const newWorkDetails = (userData?.work_details ? userData.work_details + "\n" : "") + 
+        `Deleted fabric complaint ID ${id} at ${new Date().toLocaleString()}`;
+      
+      await supabase
+        .from("login_details")
+        .update({ work_details: newWorkDetails })
+        .eq("full_name", deleted_by);
+    }
+
     res.json({ success: true, message: "Complaint deleted" });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });

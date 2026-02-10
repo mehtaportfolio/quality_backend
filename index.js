@@ -9,6 +9,7 @@ import dispatchRoutes from "./routes/dispatch.js";
 import masterRoutes from "./routes/master.js";
 import dispatchResultsRoutes from "./routes/dispatch-results.js";
 import cottonRoutes from "./routes/cotton.js";
+import authRoutes from "./routes/auth.js";
 
 dotenv.config();
 
@@ -94,6 +95,7 @@ apiRouter.use(dispatchRoutes);
 apiRouter.use(masterRoutes);
 apiRouter.use(dispatchResultsRoutes);
 apiRouter.use(cottonRoutes);
+apiRouter.use(authRoutes);
 
 app.use("/api", apiRouter);
 

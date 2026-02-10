@@ -81,6 +81,7 @@ router.post("/cotton/planning", async (req, res) => {
 router.delete("/cotton/planning/:id", async (req, res) => {
   try {
     const { id } = req.params;
+    const { deleted_by } = req.query;
     
     // First delete blends due to foreign key
     const { error: blendError } = await supabase
@@ -96,6 +97,22 @@ router.delete("/cotton/planning/:id", async (req, res) => {
       .eq("id", id);
 
     if (planningError) throw planningError;
+
+    if (deleted_by) {
+      const { data: userData } = await supabase
+        .from("login_details")
+        .select("work_details")
+        .eq("full_name", deleted_by)
+        .single();
+      
+      const newWorkDetails = (userData?.work_details ? userData.work_details + "\n" : "") + 
+        `Deleted cotton planning ID ${id} at ${new Date().toLocaleString()}`;
+      
+      await supabase
+        .from("login_details")
+        .update({ work_details: newWorkDetails })
+        .eq("full_name", deleted_by);
+    }
 
     res.json({ success: true, message: "Planning deleted" });
   } catch (err) {
@@ -211,11 +228,29 @@ router.put("/cotton/groups/:id", async (req, res) => {
 router.delete("/cotton/groups/:id", async (req, res) => {
   try {
     const { id } = req.params;
+    const { deleted_by } = req.query;
     const { error } = await supabase
       .from("cotton_groups")
       .delete()
       .eq("id", id);
     if (error) throw error;
+
+    if (deleted_by) {
+      const { data: userData } = await supabase
+        .from("login_details")
+        .select("work_details")
+        .eq("full_name", deleted_by)
+        .single();
+      
+      const newWorkDetails = (userData?.work_details ? userData.work_details + "\n" : "") + 
+        `Deleted cotton variety ID ${id} at ${new Date().toLocaleString()}`;
+      
+      await supabase
+        .from("login_details")
+        .update({ work_details: newWorkDetails })
+        .eq("full_name", deleted_by);
+    }
+
     res.json({ success: true, message: "Variety deleted" });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
